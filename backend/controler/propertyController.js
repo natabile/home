@@ -65,3 +65,13 @@ exports.getAllProperties = async (req, res) => {
     res.status(500).json({ message: 'Error fetching properties', error });
   }
 };
+
+// Get User's Properties
+exports.getUserProperties = async (req, res) => {
+  try {
+    const properties = await Property.find({ postedBy: req.user.id });
+    res.json(properties);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching user properties' });
+  }
+};

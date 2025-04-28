@@ -1,24 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Card, CardContent, Typography, CardMedia, Grid, Box, Button, CircularProgress, Snackbar, Alert, Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
+import { Container, Grid, CircularProgress, Alert, Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import Navbar from '../componet/nav';
+import PropertyCard from '../componet/PropertyCard';
 
 const PropertyList = () => {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedProperty, setSelectedProperty] = useState(null);
+  const [message, setMessage] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProperties = async () => {
-      if (!localStorage.getItem('token')) {
-        navigate('/login');
-      }
       try {
-        const response = await axios.get('http://localhost:5000/api/properties/properties');
+        const response = await axios.get('http://localhost:5000/api/properties', {
+          params: {
+            populate: 'postedBy'
+          }
+        });
         setProperties(response.data);
       } catch (error) {
         console.error('Error fetching properties:', error);
@@ -27,114 +28,121 @@ const PropertyList = () => {
         setLoading(false);
       }
     };
-    fetchProperties();
-  }, [navigate]);
 
-  const handleImageClick = (property) => {
+    fetchProperties();
+  }, []);
+
+  const handleChatClick = (property) => {
+    if (!localStorage.getItem('token')) {
+      navigate('/login');
+      return;
+    }
     setSelectedProperty(property);
   };
 
-  const handleCloseModal = () => {
-    setSelectedProperty(null);
-  };
+  const handleSendMessage = async () => {
+    if (!message.trim()) return;
 
-  const handleChatClick = async (propertyId, ownerId) => {
     try {
-      const senderId = localStorage.getItem('userId');
-      if (!senderId) {
-        setError('You must be logged in to start a chat.');
+      const token = localStorage.getItem('token');
+      const userId = localStorage.getItem('userId');
+      
+      if (!userId || !token) {
+        setError('Please login to send messages');
+        navigate('/login');
         return;
       }
-      const response = await axios.post('http://localhost:5000/api/chat/start', {
-        senderId,
-        receiverId: ownerId,
-        propertyId,
-      });
-      const chatId = response.data._id;
-      if (!chatId) {
-        setError('Failed to start chat. Please try again.');
-        return;
-      }
-      navigate(`/chat/${chatId}`);
-    } catch (error) {
-      console.error('Error starting chat:', error);
-      setError('Failed to start chat. Please try again.');
-    }
-  };
 
-  const handleCloseError = () => {
-    setError(null);
+      if (!selectedProperty?.postedBy || !selectedProperty?._id) {
+        setError('Invalid property information');
+        return;
+      }
+
+      // First, start a chat or get existing chat
+      const chatResponse = await axios.post('http://localhost:5000/api/chat/start', {
+        senderId: userId,
+        receiverId: selectedProperty.postedBy._id,
+        propertyId: selectedProperty._id
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      console.log('Chat created:', chatResponse.data);
+
+      // Then send the message
+      await axios.post('http://localhost:5000/api/chat/send_message', {
+        chatId: chatResponse.data._id,
+        senderId: userId,
+        content: message
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      setMessage('');
+      setSelectedProperty(null);
+      // Show success message
+      alert('Message sent successfully!');
+    } catch (error) {
+      console.error('Error sending message:', error);
+      const errorMessage = error.response?.data?.error || 'Failed to send message. Please try again.';
+      setError(errorMessage);
+      alert(errorMessage);
+    }
   };
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
+      <Container sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
         <CircularProgress />
-      </Box>
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container sx={{ mt: 4 }}>
+        <Alert severity="error">{error}</Alert>
+      </Container>
     );
   }
 
   return (
-    <Box>
-      <Navbar />
-      <Snackbar open={!!error} autoHideDuration={6000} onClose={handleCloseError}>
-        <Alert onClose={handleCloseError} severity="error">
-          {error}
-        </Alert>
-      </Snackbar>
-      <Grid container spacing={2} sx={{ padding: 2 }}>
-        {properties.map((property) => (
-          <Grid item xs={12} sm={6} md={4} key={property._id}>
-            <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-              {/* Show only the first image */}
-              {property.images?.length > 0 && (
-                <CardMedia
-                  component="img"
-                  height="200"
-                  image={`http://localhost:5000/${property.images[0]}`}
-                  alt={property.title}
-                  onClick={() => handleImageClick(property)}
-                  sx={{ cursor: 'pointer' }}
-                />
-              )}
-              <CardContent>
-                <Typography variant="h6" gutterBottom>{property.title}</Typography>
-                <Typography variant="body2" color="textSecondary" gutterBottom>{property.description}</Typography>
-                <Typography variant="h6" color="primary" gutterBottom>{property.price}ETB</Typography>
-                <Typography variant="body2" color="textSecondary">Posted by: {property.postedBy?.username || 'Unknown'}</Typography>
-              </CardContent>
-              <Box sx={{ padding: 2 }}>
-                <Button variant="contained" color="primary" onClick={() => handleChatClick(property._id, property.postedBy._id)} fullWidth>
-                  Start Chat
-                </Button>
-              </Box>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-
-      {selectedProperty && (
-        <Dialog open={true} onClose={handleCloseModal} fullWidth maxWidth="md">
-          <DialogTitle>
-            {selectedProperty.title}
-            <IconButton aria-label="close" onClick={handleCloseModal} sx={{ position: 'absolute', right: 8, top: 8 }}>
-              <CloseIcon />
-            </IconButton>
-          </DialogTitle>
-          <DialogContent>
-            <Grid container spacing={2}>
-              {selectedProperty.images?.map((img, index) => (
-                <Grid item xs={6} key={index}>
-                  <CardMedia component="img" image={`http://localhost:5000/${img}`} alt={selectedProperty.title} sx={{ width: '100%', height: 'auto' }} />
-                </Grid>
-              ))}
+    <>
+      <Container sx={{ mt: 4 }}>
+        <Grid container spacing={3}>
+          {properties.map((property) => (
+            <Grid item xs={12} sm={6} md={4} key={property._id}>
+              <PropertyCard 
+                property={property} 
+                showChat={true}
+                onChatClick={handleChatClick}
+              />
             </Grid>
-            <Typography variant="body1" sx={{ mt: 2 }}>{selectedProperty.description}</Typography>
-            <Typography variant="h6" color="primary" sx={{ mt: 1 }}>{selectedProperty.price}ETB</Typography>
-          </DialogContent>
-        </Dialog>
-      )}
-    </Box>
+          ))}
+        </Grid>
+      </Container>
+
+      <Dialog open={!!selectedProperty} onClose={() => setSelectedProperty(null)}>
+        <DialogTitle>Send Message about {selectedProperty?.title}</DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            multiline
+            rows={4}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Write your message here..."
+            sx={{ mt: 2 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSelectedProperty(null)}>Cancel</Button>
+          <Button onClick={handleSendMessage} variant="contained" color="primary">
+            Send Message
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 };
 

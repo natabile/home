@@ -6,24 +6,25 @@ import Profile from "./page/Profile";
 import Admin from "./page/Admin";
 import PostProperty from "./page/PostProperty";
 import PropertyList from "./page/PropertyList";
-import Chat from "./componet/Chat";
-import OwnerMessages from "./page/Ownermessage";
+import MyPosts from "./page/MyPosts";
+import MyMessages from "./page/MyMessages";
+import Layout from "./componet/Layout";
 
 const AppRoutes = () => {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/admin" element={<Admin />} />
-        <Route path="/post-property" element={<PostProperty />} />
-        <Route path="/properties" element={<PropertyList />} />
-        <Route path="/chat/:chatId" element={<Chat />} />
-        <Route path="/owner-messages" element={<OwnerMessages />} />
-
-
+        <Route element={<Layout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/post-property" element={<PostProperty />} />
+          <Route path="/properties" element={<PropertyList />} />
+          <Route path="/my-posts" element={<MyPosts />} />
+          <Route path="/my-messages" element={<MyMessages />} />
+        </Route>
       </Routes>
     </Router>
   );

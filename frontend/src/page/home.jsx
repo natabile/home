@@ -1,20 +1,15 @@
 import { Button, Typography, Container, Grid, Box } from "@mui/material";
-import Navbar from "../componet/nav";
 
 const Home = () => {
-  // Function to navigate to login page
-
-
   return (
     <>
-      {/* Navbar */}
-      <Navbar />
       <Box sx={{ padding: "10px", backgroundColor: "#3f51b5", color: "white" }}>
         <nav style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <Typography variant="h6">Home Rental & Selling</Typography>
 
         </nav>
       </Box>
+
 
       {/* Hero Section */}
       <Container sx={{ textAlign: "center", marginTop: "50px" }}>

@@ -1,16 +1,15 @@
 import React from 'react';
-import { Link } from 'react-router-dom'; // Import Link from react-router-dom
+import { Link } from 'react-router-dom';
 import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
 
 const Navbar = () => {
   return (
     <AppBar position="static">
       <Toolbar>
-        <Typography variant="h6" sx={{ flexGrow: 1 }}>
-          Property Listings
+        <Typography variant="h6" component={Link} to="/" sx={{ flexGrow: 1, textDecoration: 'none', color: 'inherit' }}>
+          Endebet
         </Typography>
-        <Box>
-          {/* Link components for navigation */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Button color="inherit" component={Link} to="/">
             Home
           </Button>
@@ -20,14 +19,21 @@ const Navbar = () => {
           <Button color="inherit" component={Link} to="/post-property">
             Post Property
           </Button>
-          <Button color="inherit" component={Link} to="/owner-messages">
-            my message
+          <Button color="inherit" component={Link} to="/my-posts">
+            My Posts
           </Button>
-
+          <Button color="inherit" component={Link} to="/my-messages">
+            My Messages
+          </Button>
+          <Button color="inherit" component={Link} to="/profile">
+            Profile
+          </Button>
           <Button color="inherit" component={Link} to="/login">
             Login
           </Button>
-
+          <Button color="inherit" component={Link} to="/register">
+            Register
+          </Button>
         </Box>
       </Toolbar>
     </AppBar>

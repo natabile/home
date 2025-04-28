@@ -134,6 +134,138 @@ module.exports = (io) => {
     }
   });
 
+  // Route to fetch messages for a specific property
+  router.get('/property-messages/:propertyId', async (req, res) => {
+    const { propertyId } = req.params;
+
+    try {
+      // Validate propertyId
+      if (!mongoose.Types.ObjectId.isValid(propertyId)) {
+        return res.status(400).json({ error: 'Invalid property ID' });
+      }
+
+      // Find all chats for this property
+      const chats = await Chat.find({ property: propertyId })
+        .populate({
+          path: 'messages.sender',
+          select: 'username'
+        })
+        .populate({
+          path: 'participants',
+          select: 'username'
+        });
+
+      if (!chats || chats.length === 0) {
+        return res.status(200).json([]);
+      }
+
+      // Flatten all messages from all chats
+      const allMessages = chats.reduce((acc, chat) => {
+        const chatMessages = chat.messages.map(msg => ({
+          ...msg.toObject(),
+          chatId: chat._id,
+          sender: msg.sender
+        }));
+        return [...acc, ...chatMessages];
+      }, []);
+
+      // Sort messages by timestamp
+      allMessages.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+      res.status(200).json(allMessages);
+    } catch (error) {
+      console.error('Error fetching property messages:', error);
+      res.status(500).json({ error: 'Server Error' });
+    }
+  });
+
+  // Route to fetch chats for a property owner
+  router.get('/owner-chats/:ownerId', async (req, res) => {
+    const { ownerId } = req.params;
+
+    try {
+      // Validate ownerId
+      if (!mongoose.Types.ObjectId.isValid(ownerId)) {
+        return res.status(400).json({ error: 'Invalid owner ID' });
+      }
+
+      // Find all chats where the owner is a participant
+      const chats = await Chat.find({
+        participants: ownerId,
+        property: { $exists: true }
+      })
+      .populate({
+        path: 'property',
+        select: 'title'
+      })
+      .populate({
+        path: 'participants',
+        select: 'username'
+      })
+      .populate({
+        path: 'messages.sender',
+        select: 'username'
+      });
+
+      // Process chats to include buyer information
+      const processedChats = chats.map(chat => {
+        const buyer = chat.participants.find(p => p._id.toString() !== ownerId);
+        return {
+          ...chat.toObject(),
+          buyer: buyer || { username: 'Unknown' }
+        };
+      });
+
+      res.status(200).json(processedChats);
+    } catch (error) {
+      console.error('Error fetching owner chats:', error);
+      res.status(500).json({ error: 'Server Error' });
+    }
+  });
+
+  // Route to fetch chats for a user
+  router.get('/my-chats/:userId', async (req, res) => {
+    const { userId } = req.params;
+
+    try {
+      // Validate userId
+      if (!mongoose.Types.ObjectId.isValid(userId)) {
+        return res.status(400).json({ error: 'Invalid user ID' });
+      }
+
+      // Find all chats where the user is a participant
+      const chats = await Chat.find({
+        participants: userId,
+        property: { $exists: true }
+      })
+      .populate({
+        path: 'property',
+        select: 'title'
+      })
+      .populate({
+        path: 'participants',
+        select: 'username'
+      })
+      .populate({
+        path: 'messages.sender',
+        select: 'username'
+      });
+
+      // Process chats to include owner information
+      const processedChats = chats.map(chat => {
+        const owner = chat.participants.find(p => p._id.toString() !== userId);
+        return {
+          ...chat.toObject(),
+          owner: owner || { username: 'Unknown' }
+        };
+      });
+
+      res.status(200).json(processedChats);
+    } catch (error) {
+      console.error('Error fetching user chats:', error);
+      res.status(500).json({ error: 'Server Error' });
+    }
+  });
 
   return router;
 };

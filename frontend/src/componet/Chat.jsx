@@ -58,30 +58,58 @@ const Chat = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
 
-    const messageData = {
-      chatId,
-      senderId,
-      content: newMessage,
-      sender: { _id: senderId, username: senderUsername },
-      createdAt: new Date().toISOString()
-    };
-
-    setMessages((prevMessages) => [
-      ...prevMessages,
-      { ...messageData, sender: { ...messageData.sender, username: 'You' } },
-    ]);
-    setNewMessage('');
-
-    socket.emit('sendMessage', messageData, (error) => {
-      if (error) {
-        console.error('Error sending message:', error);
-        setMessages((prevMessages) => prevMessages.slice(0, -1));
-        setNewMessage(newMessage);
+    try {
+      const token = localStorage.getItem('token');
+      const userId = localStorage.getItem('userId');
+      
+      if (!userId || !token) {
+        console.error('User not authenticated');
+        alert('Please login to send messages');
+        return;
       }
-    });
+
+      if (!chatId) {
+        console.error('No chat ID available');
+        alert('Chat session not found');
+        return;
+      }
+
+      // Validate chatId format
+      if (!chatId.match(/^[0-9a-fA-F]{24}$/)) {
+        console.error('Invalid chat ID format');
+        alert('Invalid chat session');
+        return;
+      }
+
+      const messageData = {
+        chatId,
+        senderId: userId,
+        content: newMessage.trim()
+      };
+
+      // Send message to server
+      const response = await axios.post('http://localhost:5000/api/chat/send_message', messageData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (!response.data || !response.data._id) {
+        throw new Error('Invalid response from server');
+      }
+
+      // Update local messages state with the response from server
+      setMessages(prevMessages => [...prevMessages, response.data]);
+      setNewMessage('');
+      
+      // Scroll to bottom
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    } catch (error) {
+      console.error('Error sending message:', error);
+      const errorMessage = error.response?.data?.error || 'Failed to send message. Please try again.';
+      alert(errorMessage);
+    }
   };
 
   const handleTyping = () => {

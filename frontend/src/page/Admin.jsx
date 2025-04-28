@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import Navbar from "../componet/nav";
 
 const Admin = () => {
   const [users, setUsers] = useState([]);  // State to hold list of users
@@ -32,7 +31,6 @@ const Admin = () => {
 
   return (
     <div>
-      <Navbar />
       <h2>Admin Panel</h2>
       {username && <h3>Welcome, {username}!</h3>}
       {error && <p style={{ color: "red" }}>{error}</p>}

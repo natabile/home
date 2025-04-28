@@ -7,23 +7,20 @@ import {
   Box, 
   CircularProgress,
   Paper,
-  TextField,
-  Button,
   Divider
 } from '@mui/material';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-const OwnerMessages = () => {
+const MyMessages = () => {
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [reply, setReply] = useState('');
   const navigate = useNavigate();
-  const ownerId = localStorage.getItem('userId');
+  const userId = localStorage.getItem('userId');
 
   useEffect(() => {
-    const fetchChats = async () => {
+    const fetchMyChats = async () => {
       try {
         const token = localStorage.getItem('token');
         if (!token) {
@@ -31,7 +28,7 @@ const OwnerMessages = () => {
           return;
         }
 
-        const response = await axios.get(`http://localhost:5000/api/chat/owner-chats/${ownerId}`, {
+        const response = await axios.get(`http://localhost:5000/api/chat/my-chats/${userId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setChats(response.data);
@@ -42,40 +39,15 @@ const OwnerMessages = () => {
         setLoading(false);
       }
     };
-    fetchChats();
-  }, [ownerId, navigate]);
-
-  const handleSendReply = async (chatId) => {
-    if (!reply.trim()) return;
-
-    try {
-      const token = localStorage.getItem('token');
-      await axios.post('http://localhost:5000/api/chat/send_message', {
-        chatId,
-        senderId: ownerId,
-        content: reply.trim()
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      setReply('');
-      // Refresh chats to show new message
-      const response = await axios.get(`http://localhost:5000/api/chat/owner-chats/${ownerId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setChats(response.data);
-    } catch (error) {
-      console.error('Error sending reply:', error);
-      alert('Failed to send reply. Please try again.');
-    }
-  };
+    fetchMyChats();
+  }, [userId, navigate]);
 
   if (loading) return <CircularProgress />;
   if (error) return <Typography color="error">{error}</Typography>;
 
   return (
     <Box sx={{ padding: 3 }}>
-      <Typography variant="h5" gutterBottom>Received Messages</Typography>
+      <Typography variant="h5" gutterBottom>My Messages</Typography>
       {chats.length === 0 ? (
         <Typography>No messages yet</Typography>
       ) : (
@@ -86,7 +58,7 @@ const OwnerMessages = () => {
                 Property: {chat.property?.title}
               </Typography>
               <Typography variant="subtitle1" color="primary" gutterBottom>
-                From: {chat.buyer?.username}
+                Owner: {chat.owner?.username}
               </Typography>
               <List>
                 {chat.messages.map((message, index) => (
@@ -95,30 +67,17 @@ const OwnerMessages = () => {
                       <ListItemText
                         primary={message.content}
                         secondary={`${message.sender?.username} - ${new Date(message.timestamp).toLocaleString()}`}
+                        sx={{
+                          backgroundColor: message.sender?._id === userId ? '#e3f2fd' : '#f5f5f5',
+                          padding: '8px',
+                          borderRadius: '4px'
+                        }}
                       />
                     </ListItem>
                     {index < chat.messages.length - 1 && <Divider />}
                   </React.Fragment>
                 ))}
               </List>
-              <Box sx={{ mt: 2 }}>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={2}
-                  placeholder="Write your reply..."
-                  value={reply}
-                  onChange={(e) => setReply(e.target.value)}
-                  sx={{ mb: 1 }}
-                />
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={() => handleSendReply(chat._id)}
-                >
-                  Reply
-                </Button>
-              </Box>
             </Paper>
           ))}
         </List>
@@ -127,4 +86,4 @@ const OwnerMessages = () => {
   );
 };
 
-export default OwnerMessages;
+export default MyMessages; 
