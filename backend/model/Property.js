@@ -1,4 +1,3 @@
-// models/Property.js
 const mongoose = require('mongoose');
 
 const propertySchema = new mongoose.Schema({
@@ -18,7 +17,11 @@ const propertySchema = new mongoose.Schema({
     type: String,
     enum: ['active', 'inactive'],
     default: 'active'
-  }
+  },
+
+  latitude: { type: Number, required: false },
+  longitude: { type: Number, required: false }
+
 }, { timestamps: true });
 
 module.exports = mongoose.model('Property', propertySchema);

@@ -82,12 +82,16 @@ module.exports = (io) => {
   // Route to send a message in an existing chat
   // Route to send a message in an existing chat
   router.post('/send_message', async (req, res) => {
-    const { chatId, senderId, content } = req.body;
+    const { chatId, senderId, content, replyTo } = req.body;
 
     try {
       // Validate chatId and senderId
       if (!mongoose.Types.ObjectId.isValid(chatId) || !mongoose.Types.ObjectId.isValid(senderId)) {
         return res.status(400).json({ error: 'Invalid chat ID or sender ID' });
+      }
+      // Validate replyTo if provided
+      if (replyTo && !mongoose.Types.ObjectId.isValid(replyTo)) {
+        return res.status(400).json({ error: 'Invalid replyTo ID' });
       }
 
       // Find the chat
@@ -112,6 +116,7 @@ module.exports = (io) => {
         sender: senderId,
         content,
         timestamp: new Date(),
+        replyTo: replyTo || null
       };
 
       // Add message to chat's messages array
@@ -194,18 +199,18 @@ module.exports = (io) => {
         participants: ownerId,
         property: { $exists: true }
       })
-      .populate({
-        path: 'property',
-        select: 'title'
-      })
-      .populate({
-        path: 'participants',
-        select: 'username'
-      })
-      .populate({
-        path: 'messages.sender',
-        select: 'username'
-      });
+        .populate({
+          path: 'property',
+          select: 'title'
+        })
+        .populate({
+          path: 'participants',
+          select: 'username'
+        })
+        .populate({
+          path: 'messages.sender',
+          select: 'username'
+        });
 
       // Process chats to include buyer information
       const processedChats = chats.map(chat => {
@@ -238,18 +243,18 @@ module.exports = (io) => {
         participants: userId,
         property: { $exists: true }
       })
-      .populate({
-        path: 'property',
-        select: 'title'
-      })
-      .populate({
-        path: 'participants',
-        select: 'username'
-      })
-      .populate({
-        path: 'messages.sender',
-        select: 'username'
-      });
+        .populate({
+          path: 'property',
+          select: 'title'
+        })
+        .populate({
+          path: 'participants',
+          select: 'username'
+        })
+        .populate({
+          path: 'messages.sender',
+          select: 'username'
+        });
 
       // Process chats to include owner information
       const processedChats = chats.map(chat => {

@@ -26,7 +26,7 @@ const Login = () => {
         navigate("/properties");
       }
     } catch (error) {
-      setError(error.response?.data?.message || "Internal server error");
+      setError(error.response?.data?.message || "Login failed!");
     }
   };
 
