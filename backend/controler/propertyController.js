@@ -73,3 +73,51 @@ exports.getUserProperties = async (req, res) => {
     res.status(500).json({ message: 'Error fetching user properties' });
   }
 };
+exports.updateUserProperty = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Only allow certain fields to be updated
+    const allowedFields = ['title', 'description', 'price', 'location']; // Add any text-only fields here
+    const updateData = {};
+
+    allowedFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        updateData[field] = req.body[field];
+      }
+    });
+
+    const property = await Property.findOneAndUpdate(
+      { _id: id, postedBy: req.user.id },
+      { $set: updateData },
+      { new: true }
+    );
+
+    if (!property) {
+      return res.status(404).json({ message: 'Property not found or not authorized' });
+    }
+
+    res.json(property);
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating property' });
+  }
+};
+exports.deleteUserProperty = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const property = await Property.findOneAndDelete({ _id: id, postedBy: req.user.id });
+
+    if (!property) {
+      return res.status(404).json({ message: 'Property not found or not authorized' });
+    }
+
+    // TODO: Delete image file from storage if needed
+    // For example, if using local file storage:
+    // fs.unlinkSync(`./uploads/${property.imageFilename}`);
+
+    res.json({ message: 'Property deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error deleting property' });
+  }
+};
