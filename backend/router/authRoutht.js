@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { registerUser, loginUser, countUsers, getAllUsers } = require('../controler/authControler');
+const { registerUser, loginUser, countUsers, getAllUsers, forgotPassword, resetPassword } = require('../controler/authControler');
 const { verifyToken } = require('../middleware/authMiddleware');
 
 // Register route
@@ -32,5 +32,11 @@ router.get('/admin/users', verifyToken, (req, res) => {
   }
   getAllUsers(req, res);  // Calls the function to fetch all users' usernames
 });
+
+// Forgot password route
+router.post('/forgot-password', forgotPassword);
+
+// Reset password route
+router.post('/reset-password', resetPassword);
 
 module.exports = router;

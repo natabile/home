@@ -95,10 +95,17 @@ const Login = () => {
               {error}
             </Typography>
           )}
-          <Typography sx={{ mt: 2 }}>
-            Don't have an account?{" "}
-            <Link to="/register" style={{ color: '#1976d2', textDecoration: 'none' }}>Register</Link>
-          </Typography>
+          <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+            <Typography>
+              <Link to="/forgot-password" style={{ color: '#1976d2', textDecoration: 'none' }}>
+                Forgot Password?
+              </Link>
+            </Typography>
+            <Typography>
+              Don't have an account?{" "}
+              <Link to="/register" style={{ color: '#1976d2', textDecoration: 'none' }}>Register</Link>
+            </Typography>
+          </Box>
         </Box>
       </Container>
     </Box>

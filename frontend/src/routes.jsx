@@ -8,6 +8,8 @@ import PostProperty from "./page/PostProperty";
 import PropertyList from "./page/PropertyList";
 import MyPosts from "./page/MyPosts";
 import MyMessages from "./page/MyMessages";
+import ForgotPassword from "./page/ForgotPassword";
+import ResetPassword from "./page/ResetPassword";
 import Layout from "./componet/Layout";
 
 const AppRoutes = () => {
@@ -24,6 +26,8 @@ const AppRoutes = () => {
           <Route path="/properties" element={<PropertyList />} />
           <Route path="/my-posts" element={<MyPosts />} />
           <Route path="/my-messages" element={<MyMessages />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
         </Route>
       </Routes>
     </Router>
