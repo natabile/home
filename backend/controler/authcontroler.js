@@ -3,6 +3,45 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const User = require('../model/user');
 const nodemailer = require('nodemailer');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// Configure multer for profile image uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = 'uploads/profiles';
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    // Create unique filename with original extension
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'profile-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+// File filter for images
+const fileFilter = (req, file, cb) => {
+  // Accept only image files
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Not an image! Please upload only images.'), false);
+  }
+};
+
+// Configure multer with file size limit of 25MB
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 25 * 1024 * 1024 // 25MB in bytes
+  }
+}).single('profileImage'); // 'profileImage' is the field name
 
 // Register user
 const registerUser = async (req, res) => {
@@ -256,11 +295,107 @@ const resetPassword = async (req, res) => {
   }
 };
 
+// Get user profile
+const getUserProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json(user);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Update user profile
+const updateProfile = async (req, res) => {
+  try {
+    const { displayName, bio, phone, location } = req.body;
+    
+    // Find user and update profile
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Update profile fields
+    if (displayName) user.profile.displayName = displayName;
+    if (bio) user.profile.bio = bio;
+    if (phone) user.profile.phone = phone;
+    if (location) user.profile.location = location;
+
+    await user.save();
+    
+    // Return updated user without password
+    const updatedUser = await User.findById(req.user.id).select('-password');
+    res.json(updatedUser);
+  } catch (err) {
+    console.error('Error updating profile:', err);
+    res.status(500).json({ message: 'Error updating profile' });
+  }
+};
+
+// Upload profile image
+const uploadProfileImage = async (req, res) => {
+  upload(req, res, async function (err) {
+    if (err instanceof multer.MulterError) {
+      // A Multer error occurred when uploading
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ message: 'File size too large. Maximum size is 25MB.' });
+      }
+      return res.status(400).json({ message: err.message });
+    } else if (err) {
+      // An unknown error occurred
+      return res.status(500).json({ message: err.message });
+    }
+
+    // No file was uploaded
+    if (!req.file) {
+      return res.status(400).json({ message: 'Please upload an image file.' });
+    }
+
+    try {
+      // Get user
+      const user = await User.findById(req.user.id);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Delete old profile image if it exists
+      if (user.profile.avatar && user.profile.avatar.startsWith('/uploads/profiles/')) {
+        const oldImagePath = path.join(__dirname, '..', user.profile.avatar);
+        if (fs.existsSync(oldImagePath)) {
+          fs.unlinkSync(oldImagePath);
+        }
+      }
+
+      // Update user's avatar with new image path
+      const imageUrl = `http://localhost:5000/uploads/profiles/${req.file.filename}`;
+      user.profile.avatar = imageUrl;
+      await user.save();
+      console.log('Updated profile image URL:', imageUrl);
+
+      res.json({
+        message: 'Profile image uploaded successfully',
+        user: await User.findById(req.user.id).select('-password')
+      });
+    } catch (error) {
+      console.error('Error updating profile image:', error);
+      res.status(500).json({ message: 'Error updating profile image' });
+    }
+  });
+};
+
 module.exports = {
   registerUser,
   loginUser,
   countUsers,
   getAllUsers,
   forgotPassword,
-  resetPassword
+  resetPassword,
+  getUserProfile,
+  updateProfile,
+  uploadProfileImage
 };

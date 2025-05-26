@@ -25,14 +25,15 @@ const Navbar = () => {
           <Button color="inherit" component={Link} to="/my-messages">
             My Messages
           </Button>
-          <Button color="inherit" component={Link} to="/profile">
-            Profile
-          </Button>
+          
           <Button color="inherit" component={Link} to="/login">
             Login
           </Button>
           <Button color="inherit" component={Link} to="/register">
             Register
+          </Button>
+          <Button color="inherit" component={Link} to="/profile">
+            Profile
           </Button>
         </Box>
       </Toolbar>

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { registerUser, loginUser, countUsers, getAllUsers, forgotPassword, resetPassword } = require('../controler/authControler');
+const { registerUser, loginUser, countUsers, getAllUsers, forgotPassword, resetPassword, getUserProfile, updateProfile,uploadProfileImage } = require('../controler/authControler');
 const { verifyToken } = require('../middleware/authMiddleware');
 
 // Register route
@@ -10,12 +10,13 @@ router.post('/register', registerUser);
 router.post('/login', loginUser);
 
 // Protected profile route
-router.get('/profile', verifyToken, (req, res) => {
-  res.status(200).json({
-    message: 'User profile fetched successfully',
-    user: req.user  // This will contain the decoded user information from the JWT
-  });
-});
+router.get('/profile', verifyToken, getUserProfile);
+
+// Update profile route
+router.put('/profile', verifyToken, updateProfile);
+
+// Upload profile image route
+router.post('/profile/image', verifyToken, uploadProfileImage);
 
 // Admin-only route to get the number of registered users
 router.get('/admin/users/count', verifyToken, (req, res) => {
